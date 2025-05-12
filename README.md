@@ -1,6 +1,6 @@
 # 🏥 Medibox: Smart Medicine Reminder System
 
-![Medibox Wokwi Simulation](simmulation%20on%20wokwi.png)
+![Medibox Wokwi Simulation]((https://github.com/rivindu02/EN2853-Medibox/blob/main/simulation%20on%20wokwi.png))
 
 ## 🌟 Project Overview
 
