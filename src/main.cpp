@@ -9,6 +9,12 @@
  * - Provides visual and audio alerts
 */
 
+/*
+ * Medibox - Medicine Reminder System
+ * Copyright (c) 2025 Kumarage R V
+ * Licensed under the MIT License
+ */
+
 #include <Arduino.h>
 #include <WiFi.h>
 #include <time.h>
@@ -327,10 +333,6 @@ String format_timezone(float tz) {
     result += String(whole) + ":" + (frac == 30 ? "30" : "00");
   }
   
-  // // Special handling for negative values
-  // if (tz < 0) {
-  //   result.replace("+", "-");
-  // }
   
   return result;
 }
