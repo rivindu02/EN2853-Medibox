@@ -1,5 +1,7 @@
 # 🏥 Medibox: Smart Medicine Reminder System
 
+![Medibox Wokwi Simulation](simmulation%20on%20wokwi.png)
+
 ## 🌟 Project Overview
 
 Medibox is an advanced ESP32-based medicine reminder system designed to help users manage their medication schedules efficiently while monitoring environmental conditions.
@@ -85,7 +87,7 @@ Medibox is an advanced ESP32-based medicine reminder system designed to help use
 - Humidity range: 65-80%
 - Warning alerts for out-of-range conditions
 
-## 🚧 Next version improvements
+## 🚧 Next version
 
 - Bluetooth/WiFi configuration interface
 - Medication logging
@@ -98,5 +100,4 @@ MIT License
 
 ## 📧 Contact
 
-kumaragerivindu@gmail.com
 kumaragerv.22@uom.lk
