@@ -1,0 +1,471 @@
+[
+    {
+        "id": "c51412ae8d2a8bb3",
+        "type": "tab",
+        "label": "Flow 1",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "slider_0",
+        "type": "ui_slider",
+        "z": "c51412ae8d2a8bb3",
+        "name": "Sampling Interval (ts)",
+        "label": "Sampling Interval (ts)",
+        "tooltip": "medibox/ts",
+        "group": "servo_group",
+        "order": 0,
+        "width": 0,
+        "height": 0,
+        "passthru": true,
+        "outs": "end",
+        "topic": "medibox/ts",
+        "min": 1,
+        "max": 60,
+        "step": 1,
+        "x": 300,
+        "y": 540,
+        "wires": [
+            [
+                "mqtt_0"
+            ]
+        ]
+    },
+    {
+        "id": "mqtt_0",
+        "type": "mqtt out",
+        "z": "c51412ae8d2a8bb3",
+        "name": "",
+        "topic": "",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "mqtt_broker",
+        "x": 520,
+        "y": 540,
+        "wires": []
+    },
+    {
+        "id": "slider_1",
+        "type": "ui_slider",
+        "z": "c51412ae8d2a8bb3",
+        "name": "Sending Interval (tu)",
+        "label": "Sending Interval (tu)",
+        "tooltip": "medibox/tu",
+        "group": "servo_group",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "passthru": true,
+        "outs": "end",
+        "topic": "medibox/tu",
+        "min": 10,
+        "max": 300,
+        "step": 10,
+        "x": 300,
+        "y": 620,
+        "wires": [
+            [
+                "mqtt_1"
+            ]
+        ]
+    },
+    {
+        "id": "mqtt_1",
+        "type": "mqtt out",
+        "z": "c51412ae8d2a8bb3",
+        "name": "",
+        "topic": "",
+        "qos": "",
+        "retain": "",
+        "broker": "mqtt_broker",
+        "x": 520,
+        "y": 620,
+        "wires": []
+    },
+    {
+        "id": "slider_2",
+        "type": "ui_slider",
+        "z": "c51412ae8d2a8bb3",
+        "name": "Min Servo Angle (θoffset)",
+        "label": "Min Servo Angle (θoffset)",
+        "tooltip": "medibox/thetaOffset",
+        "group": "servo_group",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "passthru": true,
+        "outs": "end",
+        "topic": "medibox/thetaOffset",
+        "min": 0,
+        "max": 120,
+        "step": 5,
+        "x": 300,
+        "y": 700,
+        "wires": [
+            [
+                "mqtt_2"
+            ]
+        ]
+    },
+    {
+        "id": "mqtt_2",
+        "type": "mqtt out",
+        "z": "c51412ae8d2a8bb3",
+        "name": "",
+        "topic": "",
+        "qos": "",
+        "retain": "",
+        "broker": "mqtt_broker",
+        "x": 520,
+        "y": 700,
+        "wires": []
+    },
+    {
+        "id": "slider_3",
+        "type": "ui_slider",
+        "z": "c51412ae8d2a8bb3",
+        "name": "Control Factor (γ)",
+        "label": "Control Factor (γ)",
+        "tooltip": "medibox/gamma",
+        "group": "servo_group",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "passthru": true,
+        "outs": "end",
+        "topic": "medibox/gamma",
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "x": 300,
+        "y": 780,
+        "wires": [
+            [
+                "mqtt_3"
+            ]
+        ]
+    },
+    {
+        "id": "mqtt_3",
+        "type": "mqtt out",
+        "z": "c51412ae8d2a8bb3",
+        "name": "",
+        "topic": "",
+        "qos": "",
+        "retain": "",
+        "broker": "mqtt_broker",
+        "x": 520,
+        "y": 780,
+        "wires": []
+    },
+    {
+        "id": "slider_4",
+        "type": "ui_slider",
+        "z": "c51412ae8d2a8bb3",
+        "name": "Ideal Storage Temp (Tmed)",
+        "label": "Ideal Storage Temp (Tmed)",
+        "tooltip": "medibox/Tmed",
+        "group": "servo_group",
+        "order": 4,
+        "width": 0,
+        "height": 0,
+        "passthru": true,
+        "outs": "end",
+        "topic": "medibox/Tmed",
+        "min": 10,
+        "max": 40,
+        "step": 1,
+        "x": 300,
+        "y": 860,
+        "wires": [
+            [
+                "mqtt_4"
+            ]
+        ]
+    },
+    {
+        "id": "mqtt_4",
+        "type": "mqtt out",
+        "z": "c51412ae8d2a8bb3",
+        "name": "",
+        "topic": "",
+        "qos": "",
+        "retain": "",
+        "broker": "mqtt_broker",
+        "x": 520,
+        "y": 860,
+        "wires": []
+    },
+    {
+        "id": "mqtt_ldr",
+        "type": "mqtt in",
+        "z": "c51412ae8d2a8bb3",
+        "name": "LDR Avg",
+        "topic": "medibox/ldr",
+        "qos": "0",
+        "datatype": "auto",
+        "broker": "mqtt_broker",
+        "inputs": 0,
+        "x": 800,
+        "y": 620,
+        "wires": [
+            [
+                "ldr_gauge",
+                "ldr_chart"
+            ]
+        ]
+    },
+    {
+        "id": "ldr_gauge",
+        "type": "ui_gauge",
+        "z": "c51412ae8d2a8bb3",
+        "name": "",
+        "group": "ldr_group",
+        "order": 0,
+        "width": 0,
+        "height": 0,
+        "gtype": "gage",
+        "title": "Avg Light",
+        "label": "0-1",
+        "format": "{{value}}",
+        "min": 0,
+        "max": 1,
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "x": 1000,
+        "y": 600,
+        "wires": []
+    },
+    {
+        "id": "ldr_chart",
+        "type": "ui_chart",
+        "z": "c51412ae8d2a8bb3",
+        "name": "",
+        "group": "ldr_group",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "label": "Light Intensity Over Time",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "0",
+        "ymax": "1",
+        "removeOlder": 1,
+        "removeOlderPoints": "",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "colors": [
+            "#1f77b4"
+        ],
+        "outputs": 1,
+        "x": 1000,
+        "y": 660,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "2803aceea925ebad",
+        "type": "inject",
+        "z": "c51412ae8d2a8bb3",
+        "name": "Inject default values for ts",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.1,
+        "topic": "medibox/ts",
+        "payload": "5",
+        "payloadType": "num",
+        "x": 110,
+        "y": 500,
+        "wires": [
+            [
+                "slider_0"
+            ]
+        ]
+    },
+    {
+        "id": "64ea2dec5e725b93",
+        "type": "inject",
+        "z": "c51412ae8d2a8bb3",
+        "name": "Inject default values for tu",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.1,
+        "topic": "medibox/tu",
+        "payload": "120",
+        "payloadType": "num",
+        "x": 110,
+        "y": 580,
+        "wires": [
+            [
+                "slider_1"
+            ]
+        ]
+    },
+    {
+        "id": "9cbbc230cbf0dfe3",
+        "type": "inject",
+        "z": "c51412ae8d2a8bb3",
+        "name": "Inject default values for gamma",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.1,
+        "topic": "medibox/gamma",
+        "payload": "0.75",
+        "payloadType": "num",
+        "x": 130,
+        "y": 740,
+        "wires": [
+            [
+                "slider_3"
+            ]
+        ]
+    },
+    {
+        "id": "6857439ad6540035",
+        "type": "inject",
+        "z": "c51412ae8d2a8bb3",
+        "name": "Inject default values for theta offset",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.1,
+        "topic": "medibox/thetaOffset",
+        "payload": "30",
+        "payloadType": "num",
+        "x": 140,
+        "y": 660,
+        "wires": [
+            [
+                "slider_2"
+            ]
+        ]
+    },
+    {
+        "id": "ab9d5d06e66407ce",
+        "type": "inject",
+        "z": "c51412ae8d2a8bb3",
+        "name": "Inject default values for Tmed",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.1,
+        "topic": "medibox/Tmed",
+        "payload": "30",
+        "payloadType": "num",
+        "x": 130,
+        "y": 820,
+        "wires": [
+            [
+                "slider_4"
+            ]
+        ]
+    },
+    {
+        "id": "servo_group",
+        "type": "ui_group",
+        "name": "Servo Control Parameters",
+        "tab": "dashboard_tab",
+        "order": 1,
+        "disp": true,
+        "width": "6"
+    },
+    {
+        "id": "mqtt_broker",
+        "type": "mqtt-broker",
+        "name": "Mosquitto Broker",
+        "broker": "test.mosquitto.org",
+        "port": "1883",
+        "clientid": "",
+        "usetls": false,
+        "compatmode": false,
+        "keepalive": "60",
+        "cleansession": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthPayload": "",
+        "closeTopic": "",
+        "closePayload": "",
+        "willTopic": "",
+        "willQos": "0",
+        "willPayload": ""
+    },
+    {
+        "id": "ldr_group",
+        "type": "ui_group",
+        "name": "Light Intensity",
+        "tab": "dashboard_tab",
+        "order": 2,
+        "disp": true,
+        "width": "6"
+    },
+    {
+        "id": "dashboard_tab",
+        "type": "ui_tab",
+        "name": "Medibox",
+        "icon": "dashboard",
+        "order": 0
+    }
+]

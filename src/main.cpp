@@ -38,7 +38,7 @@ DHT dht(DHTPIN, DHTTYPE);
 #define BTN_UP 33
 #define BTN_OK 32
 #define BTN_DOWN 35
-#define BTN_CANCEL 34
+#define BTN_CANCEL 25
 
 // Output Pin Definitions
 #define LED_PIN 15
@@ -72,6 +72,45 @@ enum AlarmSettingState {
   CONFIRM_ALARM
 };
 
+// --- Mode selection globals ---
+enum AppMode { MODE_NONE, MODE_ALARM, MODE_IOT };
+AppMode selectedMode = MODE_NONE;
+
+
+
+/* === Node-RED IoT Mode Additions === */
+
+#include <WiFiClient.h>
+#include <PubSubClient.h>
+#include <ESP32Servo.h>
+
+// --- MQTT and Wi-Fi ---
+bool wifiConnected = false;
+WiFiClient espClient;
+PubSubClient client(espClient);
+const char* mqtt_server = "test.mosquitto.org";
+
+
+// --- LDR & Servo Pins ---
+#define LDR_PIN    34    // Analog pin for LDR
+#define SERVO_PIN  13    // PWM pin for Servo
+Servo lightServo;
+
+// --- Sampling Buffers & Intervals ---
+const int MAX_LDR_SAMPLES = 60;          // Maximum buffer size
+float ldrSamples[MAX_LDR_SAMPLES];
+int sampleIndex     = 0;
+unsigned long lastSampleTime = 0;
+unsigned long lastSendTime   = 0;
+int ts = 5;       // sampling interval (s)
+int tu = 120;     // sending interval (s)
+
+// --- Servo-Control Parameters ---
+float thetaOffset = 30.0;    // θoffset in degrees
+float gammaFactor = 0.75;    // γ factor
+float Tmed        = 30.0;    // ideal storage temp
+
+
 
 // Global Variables
 MenuState currentState = NORMAL_DISPLAY;
@@ -98,8 +137,8 @@ bool menuInitialized = false;
 int deletePosition = 0;
 
 // Wi-Fi Credentials
-const char* ssid = "Wokwi-GUEST";
-const char* password = "";
+const char* ssid = "Wokwi-GUEST";   
+const char* password = ""; 
 
 // NTP Configuration
 const char* ntpServer = "pool.ntp.org";
@@ -109,6 +148,14 @@ const float MIN_HEALTHY_TEMP = 24.0;
 const float MAX_HEALTHY_TEMP = 32.0;
 const float MIN_HEALTHY_HUMIDITY = 65.0;
 const float MAX_HEALTHY_HUMIDITY = 80.0;
+
+
+float lastLdrAvg = 0;
+float lastTemperature = 0;
+float lastHumidity = 0;
+int   lastServoAngle = 0;
+
+
 
 // Function Prototypes
 void print_line(String message, int x = 0, int y = 0, int size = 1, bool clear = true);
@@ -131,6 +178,12 @@ String format_timezone(float tz);
 void display_delete_alarm_menu();
 void delete_alarm_1();
 void delete_alarm_2();
+void show_mode_selection_menu();
+void connect_wifi_once();
+void reconnect_mqtt();
+void callback(char* topic, byte* payload, unsigned int length);
+void update_light_and_servo_control();
+void display_iot_readings();
 
 void setup() {
   Serial.begin(115200);
@@ -178,6 +231,9 @@ void setup() {
   if (WiFi.status() == WL_CONNECTED) {
     print_line("WiFi connected!");
     
+    Serial.print("WiFi connected!  IP = ");
+    Serial.println(WiFi.localIP());
+    
     // Initialize and get time from NTP server
     configTime(timeZoneOffset * 3600, 0, ntpServer);
     print_line("Time synchronized");
@@ -188,58 +244,281 @@ void setup() {
   delay(1000);
   print_line("Medibox ready!");
   delay(1000);
+
+  client.setServer(mqtt_server, 1883);
+  client.setCallback(callback);
+
+  lightServo.attach(SERVO_PIN);
+  // after all pin/display initialization...
+  show_mode_selection_menu();
+
 }
 
 void loop() {
-  check_snooze();
-  
-  // Only run normal display when alarm is not ringing
-  if (!alarmRinging) {
-    if (currentState == NORMAL_DISPLAY) {
-      update_time_with_check_alarm();
-      check_temp();
-      
-      Button pressedButton = check_button_press();
-      if (pressedButton == OK_BTN) {
-        go_to_menu();
+  if (selectedMode == MODE_ALARM) {
+    check_snooze();
+    
+    // Only run normal display when alarm is not ringing
+    if (!alarmRinging) {
+      if (currentState == NORMAL_DISPLAY) {
+        update_time_with_check_alarm();
+        check_temp();
+        
+        Button pressedButton = check_button_press();
+        if (pressedButton == OK_BTN) {
+          go_to_menu();
+        }
+      } else {
+        run_mode();
       }
-    } else {
-      run_mode();
+    } 
+    // Special handling when alarm is ringing - keep showing alarm and check buttons
+    else {
+      Button pressedButton = check_button_press();
+      if (pressedButton == CANCEL_BTN) {
+        stop_alarm(false); // Stop
+      } else if (pressedButton == UP) {
+        stop_alarm(true); // Snooze
+      }
+      
+      // Keep displaying alarm message
+      display.clearDisplay();
+      display.setTextSize(2);
+      display.setCursor(10, 10);
+      display.println("MEDICINE");
+      display.setCursor(10, 30);
+      display.println("TIME!");
+      display.setTextSize(1);
+      display.setCursor(30, 50);
+      display.println("Alarm " + String(alarmRingingNum));
+      display.setCursor(0, 55);
+      display.println("UP=Snooze, CANCEL=Stop");
+      display.display();
+      
+      // Pulse the LED and buzzer periodically
+      if (millis() % 2000 < 200) {
+        digitalWrite(LED_PIN, HIGH);
+        digitalWrite(BUZZER_PIN, HIGH);
+      } else if (millis() % 2000 < 400) {
+        digitalWrite(LED_PIN, LOW);
+        digitalWrite(BUZZER_PIN, LOW);
+      }
     }
-  } 
-  // Special handling when alarm is ringing - keep showing alarm and check buttons
-  else {
+  }
+  else if (selectedMode == MODE_IOT) {
+    connect_wifi_once();
+    reconnect_mqtt();
+    client.loop();
+    update_light_and_servo_control();
+    display_iot_readings();
+
+    // If user presses CANCEL, go back to mode menu
     Button pressedButton = check_button_press();
     if (pressedButton == CANCEL_BTN) {
-      stop_alarm(false); // Stop
-    } else if (pressedButton == UP) {
-      stop_alarm(true); // Snooze
+      
+      selectedMode = MODE_NONE;
+      show_mode_selection_menu();
+      delay(DEBOUNCE_TIME);
+      pressedButton = NONE; // Reset button state
     }
-    
-    // Keep displaying alarm message
+  }
+
+}
+
+
+
+
+void display_iot_readings() {
+  display.clearDisplay();
+  display.setTextSize(1);
+
+  display.setCursor(0, 0);
+  display.print("Light: "); 
+  display.print(lastLdrAvg, 3);
+
+  display.setCursor(0, 10);
+  display.print("Temp: "); 
+  display.print(lastTemperature, 1);
+  display.print(" C");
+
+  display.setCursor(0, 20);
+  display.print("Hum:  "); 
+  display.print(lastHumidity, 1);
+  display.print(" %");
+
+  display.setCursor(0, 30);
+  display.print("Servo: ");
+  display.print(lastServoAngle);
+
+  display.setCursor(0, 50);
+  display.println("CANCEL => Menu");
+
+  display.display();
+}
+
+// Shows OLED menu so user picks Alarm vs IoT mode
+void show_mode_selection_menu() {
+  int sel = 0;
+  bool done = false;
+  while (!done) {
     display.clearDisplay();
-    display.setTextSize(2);
-    display.setCursor(10, 10);
-    display.println("MEDICINE");
-    display.setCursor(10, 30);
-    display.println("TIME!");
     display.setTextSize(1);
-    display.setCursor(30, 50);
-    display.println("Alarm " + String(alarmRingingNum));
-    display.setCursor(0, 55);
-    display.println("UP=Snooze, CANCEL=Stop");
+    display.setCursor(0, 0);
+    display.println("SELECT MODE:");
+    display.println(sel == 0 ? "> Medibox Alarm" : "  Medibox Alarm");
+    display.println(sel == 1 ? "> IoT Node-RED"    : "  IoT Node-RED");
+    display.println("\nUP/DOWN + OK");
     display.display();
-    
-    // Pulse the LED and buzzer periodically
-    if (millis() % 2000 < 200) {
-      digitalWrite(LED_PIN, HIGH);
-      digitalWrite(BUZZER_PIN, HIGH);
-    } else if (millis() % 2000 < 400) {
-      digitalWrite(LED_PIN, LOW);
-      digitalWrite(BUZZER_PIN, LOW);
+
+    Button b = check_button_press();
+    if (b == UP || b == DOWN) {
+      sel = 1 - sel;          // toggle between 0 and 1
+      
+       // WAIT until button is physically released
+      while (digitalRead(BTN_UP) == LOW || digitalRead(BTN_DOWN) == LOW) {
+        delay(10);
+      }
+      // FULL debounce delay
+      delay(DEBOUNCE_TIME);
+      
+
+    } else if (b == OK_BTN) {
+      while (digitalRead(BTN_OK) == LOW) {
+        delay(10);
+      }
+      delay(DEBOUNCE_TIME);
+      done = true;
+      selectedMode = (sel == 0 ? MODE_ALARM : MODE_IOT);
+    }
+    else{delay(20);}
+  }
+}
+
+// Connect to Wi‑Fi (non-blocking after first success)
+void connect_wifi_once() {
+  if (wifiConnected) return;
+  WiFi.disconnect(true);
+  delay(100);
+  WiFi.begin(ssid, password);
+
+  unsigned long start = millis();
+  while (WiFi.status() != WL_CONNECTED && millis() - start < 5000) {
+    // small delay to allow other tasks
+    delay(100);
+  }
+  if (WiFi.status() == WL_CONNECTED) {
+    wifiConnected = true;
+    configTime(timeZoneOffset * 3600, 0, ntpServer);
+    Serial.println("WiFi + NTP ready");
+  } else {
+    Serial.println("WiFi connect failed");
+  }
+}
+
+// Reconnect to MQTT broker if needed
+void reconnect_mqtt() {
+  if (client.connected() || !wifiConnected) return;
+  Serial.print("MQTT connecting...");
+  if (client.connect("ESP32Client85939022")) {
+    Serial.println("connected");
+    // subscribe to control topics
+    client.subscribe("medibox/ts");
+    client.subscribe("medibox/tu");
+    client.subscribe("medibox/thetaOffset");
+    client.subscribe("medibox/gamma");
+    client.subscribe("medibox/Tmed");
+  } else {
+    Serial.print("failed, rc=");
+    Serial.println(client.state());
+  }
+}
+
+// MQTT callback: update parameters
+void callback(char* topic, byte* payload, unsigned int length) {
+  payload[length] = '\0';
+  String msg = String((char*)payload);
+  if (strcmp(topic, "medibox/ts") == 0)        ts = msg.toInt();
+  else if (strcmp(topic, "medibox/tu") == 0)   tu = msg.toInt();
+  else if (strcmp(topic, "medibox/thetaOffset") == 0) thetaOffset = msg.toFloat();
+  else if (strcmp(topic, "medibox/gamma") == 0)       gammaFactor = msg.toFloat();
+  else if (strcmp(topic, "medibox/Tmed") == 0)        Tmed = msg.toFloat();
+}
+
+// Called every loop in IoT mode
+// Called every loop in IoT mode
+void update_light_and_servo_control() {
+  unsigned long now = millis();
+
+  // 1) Sample LDR every ts seconds
+  if (now - lastSampleTime >= (unsigned long)ts * 1000) {
+    lastSampleTime = now;
+    int raw = analogRead(LDR_PIN);
+    float intensity_ = 1.0f - (raw / 4095.0f);
+
+    // publish raw LDR immediately
+    char buf[16];
+    dtostrf(intensity_, 1, 3, buf);
+    client.publish("medibox/ldr", buf);
+
+    // store for averaging…
+    int count = tu / ts;
+    if (count > MAX_LDR_SAMPLES) count = MAX_LDR_SAMPLES;
+    ldrSamples[sampleIndex] = intensity_;
+    sampleIndex = (sampleIndex + 1) % count;
+  }
+
+  // 2) Publish average and update servo every tu seconds
+  if (now - lastSendTime >= (unsigned long)tu * 1000) {
+    lastSendTime = now;
+
+    // — compute avg LDR and publish it again —
+    int count = tu / ts;
+    if (count > MAX_LDR_SAMPLES) count = MAX_LDR_SAMPLES;
+    float sum = 0;
+    for (int i = 0; i < count; i++) sum += ldrSamples[i];
+    float avg = sum / count;
+    lastLdrAvg = avg;
+
+    char buf[16];
+    dtostrf(avg, 1, 3, buf);
+    client.publish("medibox/ldr", buf);
+
+    // — 1) READ DHT22 —
+    float temp = dht.readTemperature();
+    float hum  = dht.readHumidity();
+    if (!isnan(temp) && !isnan(hum)) {
+      lastTemperature = temp;   // for your OLED
+      lastHumidity    = hum;    // for your OLED
+
+      // — PUBLISH TEMPERATURE & HUMIDITY —
+      char tBuf[16], hBuf[16];
+      dtostrf(temp, 1, 1, tBuf);
+      dtostrf(hum,  1, 1, hBuf);
+      client.publish("medibox/temperature", tBuf);
+      client.publish("medibox/humidity",    hBuf);
+
+      // — 2) COMPUTE & MOVE SERVO —
+      float theta = thetaOffset
+                    + (180 - thetaOffset)
+                      * avg
+                      * gammaFactor
+                      * log((float)tu / (float)ts)
+                      * (temp / Tmed);
+      theta = constrain(theta, thetaOffset, 180);
+      lightServo.write((int)theta);
+      lastServoAngle = (int)theta;  // for your OLED
+
+      // — PUBLISH SERVO ANGLE —
+      char aBuf[8];
+      snprintf(aBuf, sizeof(aBuf), "%d", lastServoAngle);
+      client.publish("medibox/servoAngle", aBuf);
+
+      Serial.print("Servo angle: ");
+      Serial.println(theta);
     }
   }
 }
+
 
 // Print a message on the OLED display
 void print_line(String message, int x, int y, int size, bool clear) {

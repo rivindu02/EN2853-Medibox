@@ -202,4 +202,9 @@
  C:/Users/ASUS/.platformio/packages/framework-arduinoespressif32/libraries/SPI/src/SPI.h \
  C:/Users/ASUS/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp32-hal-spi.h \
  .pio/libdeps/esp32dev/Adafruit\ SSD1306/Adafruit_SSD1306.h \
- .pio/libdeps/esp32dev/DHT\ sensor\ library/DHT.h
+ .pio/libdeps/esp32dev/DHT\ sensor\ library/DHT.h \
+ C:/Users/ASUS/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src/WiFiClient.h \
+ .pio/libdeps/esp32dev/PubSubClient/src/PubSubClient.h \
+ .pio/libdeps/esp32dev/ESP32Servo/src/ESP32Servo.h \
+ .pio/libdeps/esp32dev/ESP32Servo/src/ESP32PWM.h \
+ C:/Users/ASUS/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp32-hal-ledc.h
